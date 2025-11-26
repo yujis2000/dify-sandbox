@@ -78,6 +78,21 @@ func InitConfig(path string) error {
 		difySandboxGlobalConfigurations.PythonLibPaths = DEFAULT_PYTHON_LIB_REQUIREMENTS
 	}
 
+	python_pip_mirror_url := os.Getenv("PIP_MIRROR_URL")
+	if python_pip_mirror_url != "" {
+		difySandboxGlobalConfigurations.PythonPipMirrorURL = python_pip_mirror_url
+	}
+
+	python_deps_update_interval := os.Getenv("PYTHON_DEPS_UPDATE_INTERVAL")
+	if python_deps_update_interval != "" {
+		difySandboxGlobalConfigurations.PythonDepsUpdateInterval = python_deps_update_interval
+	}
+
+	// if not set "PythonDepsUpdateInterval", update python dependencies every 30 minutes to keep the sandbox up-to-date
+	if difySandboxGlobalConfigurations.PythonDepsUpdateInterval == "" {
+		difySandboxGlobalConfigurations.PythonDepsUpdateInterval = "30m"
+	}
+
 	nodejs_path := os.Getenv("NODEJS_PATH")
 	if nodejs_path != "" {
 		difySandboxGlobalConfigurations.NodejsPath = nodejs_path
@@ -90,6 +105,24 @@ func InitConfig(path string) error {
 	enable_network := os.Getenv("ENABLE_NETWORK")
 	if enable_network != "" {
 		difySandboxGlobalConfigurations.EnableNetwork, _ = strconv.ParseBool(enable_network)
+	}
+
+	enable_preload := os.Getenv("ENABLE_PRELOAD")
+	if enable_preload != "" {
+		difySandboxGlobalConfigurations.EnablePreload, _ = strconv.ParseBool(enable_preload)
+	}
+
+	allowed_syscalls := os.Getenv("ALLOWED_SYSCALLS")
+	if allowed_syscalls != "" {
+		strs := strings.Split(allowed_syscalls, ",")
+		ary := make([]int, len(strs))
+		for i := range ary {
+			ary[i], err = strconv.Atoi(strs[i])
+			if err != nil {
+				return err
+			}
+		}
+		difySandboxGlobalConfigurations.AllowedSyscalls = ary
 	}
 
 	if difySandboxGlobalConfigurations.EnableNetwork {

@@ -2,11 +2,13 @@ package nodejs
 
 import (
 	_ "embed"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/langgenius/dify-sandbox/internal/core/runner"
@@ -40,6 +42,8 @@ func (p *NodeJsRunner) Run(
 	preload string,
 	options *types.RunnerOptions,
 ) (chan []byte, chan []byte, chan bool, error) {
+	configuration := static.GetDifySandboxGlobalConfigurations()
+
 	// capture the output
 	output_handler := runner.NewOutputCaptureRunner()
 	output_handler.SetTimeout(timeout)
@@ -47,7 +51,6 @@ func (p *NodeJsRunner) Run(
 	err := p.WithTempDir("/", REQUIRED_FS, func(root_path string) error {
 		output_handler.SetAfterExitHook(func() {
 			os.RemoveAll(root_path)
-			os.Remove(root_path)
 		})
 
 		// initialize the environment
@@ -65,6 +68,15 @@ func (p *NodeJsRunner) Run(
 			options.Json(),
 		)
 		cmd.Env = []string{}
+
+		if len(configuration.AllowedSyscalls) > 0 {
+			cmd.Env = append(
+				cmd.Env,
+				fmt.Sprintf("ALLOWED_SYSCALLS=%s", strings.Trim(
+					strings.Join(strings.Fields(fmt.Sprint(configuration.AllowedSyscalls)), ","), "[]",
+				)),
+			)
+		}
 
 		// capture the output
 		err = output_handler.CaptureOutput(cmd)
@@ -93,7 +105,11 @@ func (p *NodeJsRunner) InitializeEnvironment(code string, preload string, root_p
 	}
 
 	// join nodejs_sandbox_fs and code
-	code = node_sandbox_file + code
+	// encode code with base64
+	code = base64.StdEncoding.EncodeToString([]byte(code))
+	// FIXE: redeclared function causes code injection
+	evalCode := fmt.Sprintf("eval(Buffer.from('%s', 'base64').toString('utf-8'))", code)
+	code = node_sandbox_file + evalCode
 
 	// override root_path/tmp/sandbox-nodejs-project/prescript.js
 	script_path := path.Join(root_path, LIB_PATH, PROJECT_NAME, "node_temp/node_temp/test.js")

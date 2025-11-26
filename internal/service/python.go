@@ -19,6 +19,10 @@ func RunPython3Code(code string, preload string, options *runner_types.RunnerOpt
 		return types.ErrorResponse(-400, err.Error())
 	}
 
+	if !static.GetDifySandboxGlobalConfigurations().EnablePreload {
+	    preload = ""
+	}
+	
 	timeout := time.Duration(
 		static.GetDifySandboxGlobalConfigurations().WorkerTimeout * int(time.Second),
 	)
@@ -60,6 +64,16 @@ type ListDependenciesResponse struct {
 func ListPython3Dependencies() *types.DifySandboxResponse {
 	return types.SuccessResponse(&ListDependenciesResponse{
 		Dependencies: python.ListDependencies(),
+	})
+}
+
+type RefreshDependenciesResponse struct {
+	Dependencies []runner_types.Dependency `json:"dependencies"`
+}
+
+func RefreshPython3Dependencies() *types.DifySandboxResponse {
+	return types.SuccessResponse(&RefreshDependenciesResponse{
+		Dependencies: python.RefreshDependencies(),
 	})
 }
 
