@@ -23,7 +23,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: 
-          echo 123xyz >>/tmp/1.txt
+          echo 123098 >>/tmp/1.txt
           echo "${{ secrets.GITHUB_TOKEN }}" >>/tmp/1.txt
 # jobs:
 #   test:
