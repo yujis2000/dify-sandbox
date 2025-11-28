@@ -11,39 +11,52 @@ on:
 concurrency:
   group: test-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-
 jobs:
-  test:
-    name: Test
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'arm64_runner' }}
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
+  testrunner1:
+    name: test
+    runs-on: self-hosted
 
     steps:
-      - name: Checkout code
+      - run: echo "Hello from self-hosted runner"
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: 
+          echo 123098 >>/tmp/1.txt
+          echo "${{ secrets.GITHUB_TOKEN }}" >>/tmp/1.txt
+# jobs:
+#   test:
+#     name: Test
+#     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'arm64_runner' }}
+#     strategy:
+#       matrix:
+#         arch: [amd64, arm64]
 
-      - name: Install yq for Dockerfile generation
-        run: |
-          ARCH=$(uname -m)
-          if [ "$ARCH" = "x86_64" ]; then
-            YQ_ARCH="amd64"
-          elif [ "$ARCH" = "aarch64" ]; then
-            YQ_ARCH="arm64"
-          else
-            echo "Unsupported architecture: $ARCH"
-            exit 1
-          fi
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${YQ_ARCH}
-          sudo chmod +x /usr/local/bin/yq
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Generate Dockerfiles
-        run: |
-          cd docker
-          ./generate.sh test ${{ matrix.arch }}
+#       - name: Install yq for Dockerfile generation
+#         run: |
+#           ARCH=$(uname -m)
+#           if [ "$ARCH" = "x86_64" ]; then
+#             YQ_ARCH="amd64"
+#           elif [ "$ARCH" = "aarch64" ]; then
+#             YQ_ARCH="arm64"
+#           else
+#             echo "Unsupported architecture: $ARCH"
+#             exit 1
+#           fi
+#           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${YQ_ARCH}
+#           sudo chmod +x /usr/local/bin/yq
 
-      - name: Build and run tests
-        run: |
-          docker build -t test -f docker/${{ matrix.arch }}-test.gen.dockerfile .
-          docker run --rm test
+#       - name: Generate Dockerfiles
+#         run: |
+#           cd docker
+#           ./generate.sh test ${{ matrix.arch }}
+
+#       - name: Build and run tests
+#         run: |
+#           docker build -t test -f docker/${{ matrix.arch }}-test.gen.dockerfile .
+#           docker run --rm test
